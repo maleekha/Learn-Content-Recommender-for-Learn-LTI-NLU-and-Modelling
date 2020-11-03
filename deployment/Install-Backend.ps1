@@ -11,7 +11,8 @@ enum VALID_FUNCTIONS {
     Assignments;
     Connect;
     Platforms;
-    Users
+    Users;
+    LearnContentRecommender
 }
 
 function Write-BackendDebugLog {
@@ -94,7 +95,8 @@ function Install-Backend {
         [string]$AssignmentsFunctionAppName,
         [string]$ConnectFunctionAppName,
         [string]$PlatformsFunctionAppName,
-        [string]$UsersFunctionAppName
+        [string]$UsersFunctionAppName,
+        [string]$LearnContentRecommenderFunctionAppName
     )
 
     Write-BackendDebugLog -Message "Switching to [$SourceRoot] as working directory"
@@ -131,6 +133,7 @@ function Install-Backend {
                     "Connect"                   { return $ConnectFunctionAppName }
                     "Platforms"                 { return $PlatformsFunctionAppName }
                     "Users"                     { return $UsersFunctionAppName }
+                    "LearnContentRecommender"   { return $LearnContentRecommenderFunctionAppName}
                 }
             }
             if ($FunctionAppName) { 

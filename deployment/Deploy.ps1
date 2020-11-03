@@ -5,9 +5,9 @@
 
 [CmdletBinding()]
 param (
-    [string]$ResourceGroupName = "MSLearnLTI",
-    [string]$AppName = "MS-Learn-Lti-Tool-App",
-    [string]$IdentityName = "MSLearnLTI-Identity",
+    [string]$ResourceGroupName = "NL-contentrecommender",
+    [string]$AppName = "NL-contentrecommender",
+    [string]$IdentityName = "NL-contentrecommender",
     [switch]$UseActiveAzureAccount,
     [string]$SubscriptionNameOrId = $null,
     [string]$LocationName = $null
@@ -276,6 +276,7 @@ process {
             ConnectFunctionAppName=$deploymentOutput.properties.outputs.ConnectFunctionName.value;
             PlatformsFunctionAppName=$deploymentOutput.properties.outputs.PlatformsFunctionName.value;
             UsersFunctionAppName=$deploymentOutput.properties.outputs.UsersFunctionName.value;
+            LearnContentRecommenderFunctionAppName=$deploymentOutput.properties.outputs.LearnContentRecommenderFunctionName.value;
         }
         Install-Backend @BackendParams
         #endregion

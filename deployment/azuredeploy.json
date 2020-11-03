@@ -35,7 +35,8 @@
             "learncontent",
             "links",
             "platforms",
-            "users"
+            "users",
+            "recommender"
         ],
         "enabledForDeployment": false,
         "enabledForDiskEncryption": false,
@@ -574,6 +575,10 @@
         },
         "LinksFunctionName": {
             "value": "[concat('links', variables('ProjectNameSuffix'))]",
+            "type": "string"
+        },
+        "LearnContentRecommenderFunctionName": {
+            "value": "[concat('recommender', variables('ProjectNameSuffix'))]",
             "type": "string"
         },
         "StaticWebSiteName": {
