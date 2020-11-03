@@ -5,6 +5,7 @@
         "uniqueIdentifier": "[substring(uniqueString(subscription().subscriptionId, resourceGroup().id),0,9)]",
         "tenantId": "[subscription().tenantId]",
         "vaults_azmlwskeyvault_name": "[concat('azmlwskeyvault', variables('uniqueIdentifier'))]",
+        "location": "[resourceGroup().location]",
         "workspaces_azmlws_name": "[concat('azmlws', variables('uniqueIdentifier'))]",
         "components_azmlwsinsights4799f44a06_name": "[concat('azmlwsinsights', variables('uniqueIdentifier'))]",
         "storageAccounts_azmlwsstorage3beed6215e7_name": "[concat('azwsstorageins', variables('uniqueIdentifier'))]"
@@ -16,7 +17,7 @@
             "type": "microsoft.insights/components",
             "apiVersion": "2018-05-01-preview",
             "name": "[variables('components_azmlwsinsights4799f44a06_name')]",
-            "location": "eastus",
+            "location": "[variables('location')]",
             "kind": "web",
             "properties": {
                 "Application_Type": "web",
@@ -29,7 +30,7 @@
             "type": "Microsoft.KeyVault/vaults",
             "apiVersion": "2016-10-01",
             "name": "[variables('vaults_azmlwskeyvault_name')]",
-            "location": "eastus",
+            "location": "[variables('location')]",
             "properties": {
                 "sku": {
                     "family": "A",
@@ -53,7 +54,7 @@
             "accessPolicies": [
             {
                 "tenantId": "[variables('tenantId')]",
-                "objectId": "[reference(resourceId('Microsoft.MachineLearningServices/workspaces', variables('workspaces_azmlws_name')), '2019-08-01', 'Full').identity.principalId]",
+                "objectId": "[reference(resourceId('Microsoft.MachineLearningServices/workspaces', variables('workspaces_azmlws_name')), '2018-03-01-preview', 'Full').identity.principalId]",
                 "permissions": {
                     "keys": [
                         "all"
@@ -73,7 +74,7 @@
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "2018-07-01",
             "name": "[variables('storageAccounts_azmlwsstorage3beed6215e7_name')]",
-            "location": "eastus",
+            "location": "[variables('location')]",
             "sku": {
                 "name": "Standard_LRS",
                 "tier": "Standard"
@@ -107,7 +108,7 @@
             "type": "Microsoft.KeyVault/vaults/secrets",
             "apiVersion": "2016-10-01",
             "name": "[concat(variables('vaults_azmlwskeyvault_name'), '/secret1')]",
-            "location": "eastus",
+            "location": "[variables('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.KeyVault/vaults', variables('vaults_azmlwskeyvault_name'))]"
             ],
@@ -122,7 +123,7 @@
             "type": "Microsoft.KeyVault/vaults/secrets",
             "apiVersion": "2016-10-01",
             "name": "[concat(variables('vaults_azmlwskeyvault_name'), '/secret2')]",
-            "location": "eastus",
+            "location": "[variables('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.KeyVault/vaults', variables('vaults_azmlwskeyvault_name'))]"
             ],
@@ -245,9 +246,9 @@
         },
         {
             "type": "Microsoft.MachineLearningServices/workspaces",
-            "apiVersion": "2019-06-01",
+            "apiVersion": "2018-03-01-preview",
             "name": "[variables('workspaces_azmlws_name')]",
-            "location": "eastus",
+            "location": "[variables('location')]",
             "dependsOn": [
                 "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccounts_azmlwsstorage3beed6215e7_name'))]",
                 "[resourceId('Microsoft.KeyVault/vaults', variables('vaults_azmlwskeyvault_name'))]",
@@ -266,8 +267,7 @@
                 "keyVault": "[resourceId('Microsoft.KeyVault/vaults', variables('vaults_azmlwskeyvault_name'))]",
                 "applicationInsights": "[resourceId('microsoft.insights/components', variables('components_azmlwsinsights4799f44a06_name'))]",
                 "hbiWorkspace": false,
-                "allowPublicAccessWhenBehindVnet": false,
-                "discoveryUrl": "https://eastus.experiments.azureml.net/discovery"
+                "allowPublicAccessWhenBehindVnet": false
             }
         }
     ]

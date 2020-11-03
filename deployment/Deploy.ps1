@@ -223,6 +223,11 @@ process {
     
         $userObjectId = az ad signed-in-user show --query objectId
         #$userObjectId
+
+        Write-Host 'Creating Machine Learning Resources for Learn Content Recommender'
+        az deployment group create --resource-group $ResourceGroupName --template-file 'learnrecdeploy.json'
+        # TODO: register model and create end point. Pass the end point to the function app.
+
     
         $templateFileName = "azuredeploy.json"
         $deploymentName = "Deployment-$ExecutionStartTime"
