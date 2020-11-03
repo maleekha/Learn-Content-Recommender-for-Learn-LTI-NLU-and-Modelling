@@ -1,0 +1,274 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "variables": {
+        "uniqueIdentifier": "[substring(uniqueString(subscription().subscriptionId, resourceGroup().id),0,9)]",
+        "tenantId": "[subscription().tenantId]",
+        "vaults_azmlwskeyvault_name": "[concat('azmlwskeyvault', variables('uniqueIdentifier'))]",
+        "workspaces_azmlws_name": "[concat('azmlws', variables('uniqueIdentifier'))]",
+        "components_azmlwsinsights4799f44a06_name": "[concat('azmlwsinsights', variables('uniqueIdentifier'))]",
+        "storageAccounts_azmlwsstorage3beed6215e7_name": "[concat('azwsstorageins', variables('uniqueIdentifier'))]"
+    },
+    "parameters": {
+    },
+    "resources": [
+        {
+            "type": "microsoft.insights/components",
+            "apiVersion": "2018-05-01-preview",
+            "name": "[variables('components_azmlwsinsights4799f44a06_name')]",
+            "location": "eastus",
+            "kind": "web",
+            "properties": {
+                "Application_Type": "web",
+                "RetentionInDays": 90,
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "apiVersion": "2016-10-01",
+            "name": "[variables('vaults_azmlwskeyvault_name')]",
+            "location": "eastus",
+            "properties": {
+                "sku": {
+                    "family": "A",
+                    "name": "Standard"
+                },
+                "tenantId": "[variables('tenantId')]",
+                "accessPolicies": [],
+                "enabledForDeployment": true,
+                "enabledForTemplateDeployment": true
+            }
+        },
+        {
+        "type": "Microsoft.KeyVault/vaults/accessPolicies",
+        "apiVersion": "2016-10-01",
+        "name": "[concat(variables('vaults_azmlwskeyvault_name'), '/add')]",
+        "dependsOn": [
+            "[resourceId('Microsoft.MachineLearningServices/workspaces', variables('workspaces_azmlws_name'))]",
+            "[resourceId('Microsoft.KeyVault/vaults', variables('vaults_azmlwskeyvault_name'))]"
+        ],
+        "properties": {
+            "accessPolicies": [
+            {
+                "tenantId": "[variables('tenantId')]",
+                "objectId": "[reference(resourceId('Microsoft.MachineLearningServices/workspaces', variables('workspaces_azmlws_name')), '2019-08-01', 'Full').identity.principalId]",
+                "permissions": {
+                    "keys": [
+                        "all"
+                    ],
+                    "secrets": [
+                        "all"
+                    ],
+                    "certificates": [
+                        "all"
+                    ]
+                }
+            }
+            ]
+        }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2018-07-01",
+            "name": "[variables('storageAccounts_azmlwsstorage3beed6215e7_name')]",
+            "location": "eastus",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "StorageV2",
+            "properties": {
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "blob": {
+                            "keyType": "Account",
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "apiVersion": "2016-10-01",
+            "name": "[concat(variables('vaults_azmlwskeyvault_name'), '/secret1')]",
+            "location": "eastus",
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', variables('vaults_azmlwskeyvault_name'))]"
+            ],
+            "properties": {
+                "attributes": {
+                    "enabled": true
+                },
+                "value": "secret1"
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults/secrets",
+            "apiVersion": "2016-10-01",
+            "name": "[concat(variables('vaults_azmlwskeyvault_name'), '/secret2')]",
+            "location": "eastus",
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', variables('vaults_azmlwskeyvault_name'))]"
+            ],
+            "properties": {
+                "attributes": {
+                    "enabled": true
+                },
+                "value": "secret2"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices",
+            "apiVersion": "2018-07-01",
+            "name": "[concat(variables('storageAccounts_azmlwsstorage3beed6215e7_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccounts_azmlwsstorage3beed6215e7_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "cors": {
+                    "corsRules": [
+                        {
+                            "allowedOrigins": [
+                                "https://mlworkspace.azure.ai",
+                                "https://ml.azure.com",
+                                "https://*.ml.azure.com"
+                            ],
+                            "allowedMethods": [
+                                "GET",
+                                "HEAD"
+                            ],
+                            "maxAgeInSeconds": 1800,
+                            "exposedHeaders": [
+                                "*"
+                            ],
+                            "allowedHeaders": [
+                                "*"
+                            ]
+                        }
+                    ]
+                },
+                "deleteRetentionPolicy": {
+                    "enabled": false
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(variables('storageAccounts_azmlwsstorage3beed6215e7_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccounts_azmlwsstorage3beed6215e7_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/queueServices",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(variables('storageAccounts_azmlwsstorage3beed6215e7_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccounts_azmlwsstorage3beed6215e7_name'))]"
+            ],
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/tableServices",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(variables('storageAccounts_azmlwsstorage3beed6215e7_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccounts_azmlwsstorage3beed6215e7_name'))]"
+            ],
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(variables('storageAccounts_azmlwsstorage3beed6215e7_name'), '/default/azureml-blobstore-', variables('uniqueIdentifier'))]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('storageAccounts_azmlwsstorage3beed6215e7_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccounts_azmlwsstorage3beed6215e7_name'))]"
+            ],
+            "properties": {
+                "defaultEncryptionScope": "$account-encryption-key",
+                "denyEncryptionScopeOverride": false,
+                "publicAccess": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(variables('storageAccounts_azmlwsstorage3beed6215e7_name'), '/default/azureml-filestore-', variables('uniqueIdentifier'))]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', variables('storageAccounts_azmlwsstorage3beed6215e7_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccounts_azmlwsstorage3beed6215e7_name'))]"
+            ],
+            "properties": {
+                "accessTier": "TransactionOptimized",
+                "shareQuota": 5120,
+                "enabledProtocols": "SMB"
+            }
+        },
+        {
+            "type": "Microsoft.MachineLearningServices/workspaces",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('workspaces_azmlws_name')]",
+            "location": "eastus",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccounts_azmlwsstorage3beed6215e7_name'))]",
+                "[resourceId('Microsoft.KeyVault/vaults', variables('vaults_azmlwskeyvault_name'))]",
+                "[resourceId('microsoft.insights/components', variables('components_azmlwsinsights4799f44a06_name'))]"
+            ],
+            "sku": {
+                "name": "Basic",
+                "tier": "Basic"
+            },
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "friendlyName": "[variables('workspaces_azmlws_name')]",
+                "storageAccount": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccounts_azmlwsstorage3beed6215e7_name'))]",
+                "keyVault": "[resourceId('Microsoft.KeyVault/vaults', variables('vaults_azmlwskeyvault_name'))]",
+                "applicationInsights": "[resourceId('microsoft.insights/components', variables('components_azmlwsinsights4799f44a06_name'))]",
+                "hbiWorkspace": false,
+                "allowPublicAccessWhenBehindVnet": false,
+                "discoveryUrl": "https://eastus.experiments.azureml.net/discovery"
+            }
+        }
+    ]
+}
