@@ -5,9 +5,9 @@
 
 [CmdletBinding()]
 param (
-    [string]$ResourceGroupName = "NL-contentrecommender",
-    [string]$AppName = "NL-contentrecommender",
-    [string]$IdentityName = "NL-contentrecommender",
+    [string]$ResourceGroupName = "MSLearnLTI",
+    [string]$AppName = "MS-Learn-Lti-Tool-App",
+    [string]$IdentityName = "MSLearnLTI-Identity",
     [switch]$UseActiveAzureAccount,
     [string]$SubscriptionNameOrId = $null,
     [string]$LocationName = $null
