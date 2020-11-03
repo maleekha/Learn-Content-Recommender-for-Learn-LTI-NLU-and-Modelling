@@ -4,5 +4,6 @@ namespace Edna.LearnContentRecommender
 {
     public class LearnContentRecommenderEntity : TableEntity
     {
+        public string RecommendedContentUids { get; set; }
     }
 }

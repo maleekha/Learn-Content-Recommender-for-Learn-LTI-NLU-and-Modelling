@@ -2,6 +2,9 @@
 {
     public class LearnContentRecommenderDto
     {
-        public string ContentUid { get; set; }
+        public string RecommenderId { get; set; } // assignmentId_level
+        public string AssignmentId { get; set; }
+        public Level Level { get; set; }
+        public string RecommendedContentUids { get; set; }
     }
 }
