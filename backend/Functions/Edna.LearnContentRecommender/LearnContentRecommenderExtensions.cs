@@ -9,18 +9,31 @@ namespace Edna.LearnContentRecommender
     {
         public static string ToRecommenderId(this ITableEntity entity) => $"{entity.PartitionKey}_{entity.RowKey}";
 
-        public static (string partitionKey, string rowKey) ToEntityIdentifiers(this string recommenderId)
+        public static string ToAssignmentId(this string recommenderId)
         {
             if (string.IsNullOrEmpty(recommenderId))
-                return ("", "");
+                return "";
             string[] assignmentIdParts = recommenderId.Split("_");
             if (assignmentIdParts.Length != 3)
-                return ("", "");
+                return "";
 
             string assignmentId = assignmentIdParts[0] + "_" + assignmentIdParts[1];
             string level = assignmentIdParts[2];
 
-            return (assignmentId, level);
+            return assignmentId;
+        }
+        public static string ToLevel(this string recommenderId)
+        {
+            if (string.IsNullOrEmpty(recommenderId))
+                return "";
+            string[] assignmentIdParts = recommenderId.Split("_");
+            if (assignmentIdParts.Length != 3)
+                return "";
+
+            string assignmentId = assignmentIdParts[0] + "_" + assignmentIdParts[1];
+            string level = assignmentIdParts[2];
+
+            return level;
         }
     }
 }

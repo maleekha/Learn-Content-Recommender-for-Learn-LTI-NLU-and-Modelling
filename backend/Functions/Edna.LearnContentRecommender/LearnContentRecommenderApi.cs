@@ -22,7 +22,8 @@ namespace Edna.LearnContentRecommender
 {
     public class LearnContentRecommenderApi
     {
-        private const string LearnContentRecommenderTableName = "LearnContentRecommender";
+        private const string LearnContentEmbeddingsTableName = "LearnContentEmbeddings";
+        private const string RecommendedLearnContentTableName = "RecommendedLearnContent";
         private const string LearnContentUrlIdentifierKey = "WT.mc_id";
         private const string LearnContentUrlIdentifierValue = "Edna";
 
@@ -68,45 +69,49 @@ namespace Edna.LearnContentRecommender
 
 
         //one func to get results from model and save results in a table 
-        //one func to get results of similarity bw assignment title and all courses and save in a table as assignmentID vs recommended courses
+        //one func to get results of similarity bw assignment title and all courses and save in a table as recommender vs recommended courses
         //one func to get saved results from table for a particular assignment id
 
-        [FunctionName(nameof(GetAllLearnContentRecommender))]
-        public async Task<IActionResult> GetAllLearnContentRecommender(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "assignments/{assignmentId}/recommended-learn-content")] HttpRequest req,
-            [Table(LearnContentRecommenderTableName)] CloudTable assignmentLearnContentTable,
-            string assignmentId)
+        [FunctionName(nameof(GetRecommendedLearnContent))]
+        public async Task<IActionResult> GetRecommendedLearnContent(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "assignments/{recommenderId}/recommended-learn-content")] HttpRequest req,
+            [Table(RecommendedLearnContentTableName)] CloudTable assignmentLearnContentTable,
+            string recommenderId)
         {
-            _logger.LogInformation($"Fetching all recommended learn content for assignment {assignmentId}.");
+            _logger.LogInformation($"Fetching all recommended learn content for assignment & level {recommenderId}.");
 
-            List<LearnContentRecommenderEntity> assignmentRecommendedLearnContent = await GetAllLearnContentRecommenderEntities(assignmentLearnContentTable, assignmentId);
+            List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = await GetRecommendedLearnContentEntities(assignmentLearnContentTable, recommenderId);
 
-            IEnumerable<LearnContentRecommenderDto> assignmentRecommendedLearnContentDtos = assignmentRecommendedLearnContent
+            IEnumerable<RecommendedLearnContentDto> assignmentRecommendedLearnContentDtos = assignmentRecommendedLearnContent
                 .OrderBy(entity => entity.Timestamp.Ticks)
-                .Select(_mapper.Map<LearnContentRecommenderDto>);
+                .Select(_mapper.Map<RecommendedLearnContentDto>);
 
             return new OkObjectResult(assignmentRecommendedLearnContentDtos);
         }
 
-        private async Task<List<LearnContentRecommenderEntity>> GetAllLearnContentRecommenderEntities(CloudTable learnContentRecommenderTable, string assignmentId)
+        private async Task<List<RecommendedLearnContentEntity>> GetRecommendedLearnContentEntities(CloudTable learnContentRecommenderTable, string recommenderId)
         {
-            TableQuery<LearnContentRecommenderEntity> assignmentSelectedLearnContentQuery = new TableQuery<LearnContentRecommenderEntity>()
+            TableQuery<RecommendedLearnContentEntity> assignmentRecommendedLearnContentQuery = new TableQuery<RecommendedLearnContentEntity>()
                 .Where(
-                    TableQuery.GenerateFilterCondition(nameof(TableEntity.PartitionKey), QueryComparisons.Equal, assignmentId)
+                    TableQuery.GenerateFilterCondition(nameof(TableEntity.PartitionKey), QueryComparisons.Equal, recommenderId)
                 );
 
-            List<LearnContentRecommenderEntity> assignmentSelectedLearnContent = new List<LearnContentRecommenderEntity>();
+            List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = new List<RecommendedLearnContentEntity>();
             TableContinuationToken continuationToken = new TableContinuationToken();
             do
             {
-                TableQuerySegment<LearnContentRecommenderEntity> querySegment = await learnContentRecommenderTable.ExecuteQuerySegmentedAsync(assignmentSelectedLearnContentQuery, continuationToken);
+                TableQuerySegment<RecommendedLearnContentEntity> querySegment = await learnContentRecommenderTable.ExecuteQuerySegmentedAsync(assignmentRecommendedLearnContentQuery, continuationToken);
                 continuationToken = querySegment.ContinuationToken;
-                assignmentSelectedLearnContent.AddRange(querySegment.Results);
+                assignmentRecommendedLearnContent.AddRange(querySegment.Results);
             } while (continuationToken != null);
 
-            return assignmentSelectedLearnContent;
+            return assignmentRecommendedLearnContent;
         }
 
+        private void GetSimilarity(CloudTable learnContentEmbeddings, string assignmentTitleEmbedding)
+        {
+            
+        }
         //[FunctionName("LearnContentRecommenderApi")]
         //public static async Task<IActionResult> Run(
         //    [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
