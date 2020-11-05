@@ -8,5 +8,6 @@ namespace Edna.LearnContentRecommender
     {
         public string ContentUid { get; set; }
         public string Embedding { get; set; }
+        public string Level { get; set; }
     }
 }

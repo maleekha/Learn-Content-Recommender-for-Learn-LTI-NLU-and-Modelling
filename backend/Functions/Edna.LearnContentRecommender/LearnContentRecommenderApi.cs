@@ -81,19 +81,20 @@ namespace Edna.LearnContentRecommender
         public async Task<IActionResult> GetRecommendedLearnContent(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "assignments/{assignmentId}/recommended-learn-content")] HttpRequest req,
             [Table(RecommendedLearnContentTableName)] CloudTable recommendedLearnContentTable,
+            [Table(LearnContentEmbeddingsTableName)] CloudTable learnContentEmbeddingsTable,
             [Assignment(AssignmentId = "{assignmentId}")] Assignment assignment,
             string assignmentId)
         {
             _logger.LogInformation($"Fetching all recommended learn content for assignment {assignmentId}.");
 
-            List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = await GetAllRecommendedLearnContentEntities(recommendedLearnContentTable, assignmentId, assignment.Name);
+            List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = await GetAllRecommendedLearnContentEntities(recommendedLearnContentTable, learnContentEmbeddingsTable, assignmentId, assignment.Name);
 
             IEnumerable<RecommendedLearnContentDto> assignmentRecommendedLearnContentDtos = assignmentRecommendedLearnContent.Select(_mapper.Map<RecommendedLearnContentDto>);
 
             return new OkObjectResult(assignmentRecommendedLearnContentDtos);
         }
 
-        private async Task<List<RecommendedLearnContentEntity>> GetAllRecommendedLearnContentEntities(CloudTable recommendedLearnContentTable, string assignmentId, string assignmentTtitle)
+        private async Task<List<RecommendedLearnContentEntity>> GetAllRecommendedLearnContentEntities(CloudTable recommendedLearnContentTable, [Table(LearnContentEmbeddingsTableName)] CloudTable learnContentEmbeddingsTableName, string assignmentId, string assignmentTtitle)
         {
             List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = new List<RecommendedLearnContentEntity>();
 
@@ -103,7 +104,7 @@ namespace Edna.LearnContentRecommender
             if(recommendedBeginnerLearnContentEntity is null)
             {
                 // first time call
-                var recCourses = await GetRecommendedLearnContentFromAssignmentTitle(assignmentTtitle);
+                var recCourses = await GetRecommendedLearnContentFromAssignmentTitle_V2(assignmentTtitle);
 
                 RecommendedLearnContentEntity beginnerEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "beginner", RecommendedContentUids = recCourses[0] };
                 TableOperation insertBeginnerOp = TableOperation.Insert(beginnerEntity);
@@ -204,7 +205,7 @@ namespace Edna.LearnContentRecommender
             return assignmentEntity;
         }
 
-        private async Task<List<string>> GetRecommendedLearnContentFromAssignmentTitle(string assignmentTitle)
+        private async Task<List<string>> GetRecommendedLearnContentFromAssignmentTitle_V2(string assignmentTitle)
         {
             List<string> data = new List<string>() { assignmentTitle };
             var jsonContent = JsonConvert.SerializeObject(data);
@@ -230,7 +231,78 @@ namespace Edna.LearnContentRecommender
         }
 
 
+        private async Task<List<string>> GetRecommendedLearnContentFromAssignmentTitle_V1([Table(LearnContentEmbeddingsTableName)] CloudTable learnContentEmbeddingsTable, string assignmentTitle)
+        {
+            TableQuery<LearnContentEmbeddingEntity> q = new TableQuery<LearnContentEmbeddingEntity>();
+            TableContinuationToken continuationToken = new TableContinuationToken();
 
+            List<LearnContentEmbeddingEntity> learnContentEmbeddings = new List<LearnContentEmbeddingEntity>();
+            do
+            {
+                TableQuerySegment<LearnContentEmbeddingEntity> queryResultSegment = await learnContentEmbeddingsTable.ExecuteQuerySegmentedAsync(q, continuationToken);
+                continuationToken = queryResultSegment.ContinuationToken;
+
+                learnContentEmbeddings.AddRange(queryResultSegment.Results);
+
+            } while (continuationToken != null);
+
+            var obj = new
+            {
+                data = assignmentTitle
+            };
+
+            HttpClient client = _httpClientFactory.CreateClient();
+            HttpResponseMessage resp = await client.PostAsJsonAsync(NLU_MODEL, obj);
+            string respString = await resp.Content.ReadAsStringAsync();
+            double[] assignmentTitleEmbedding = JsonConvert.DeserializeObject<double[]>(respString);
+
+            List<LearnContentSimilarityObject> simi = new List<LearnContentSimilarityObject>();
+
+            foreach(LearnContentEmbeddingEntity e in learnContentEmbeddings)
+            {
+                double[] emb = Array.ConvertAll(e.Embedding.Split(','), Double.Parse);
+                double similarity = CosineSimilarity(emb, assignmentTitleEmbedding);
+                simi.Append(new LearnContentSimilarityObject { ContentUid = e.ContentUid, Level = e.Level, Similarity = similarity });
+            }
+
+            simi.Sort(comparer);
+
+            IEnumerable<LearnContentSimilarityObject> beginnerSimi = simi.Where(e => e.Level == "beginner").Take(3);
+            IEnumerable<LearnContentSimilarityObject> intermediateSimi = simi.Where(e => e.Level == "intermediate").Take(3);
+            IEnumerable<LearnContentSimilarityObject> advancedSimi = simi.Where(e => e.Level == "advanced").Take(3);
+
+            string beginnerLevelContentUids = string.Join(",", beginnerSimi.Select(e => e.ContentUid));
+            string intermediateLevelContentUids = string.Join(",", intermediateSimi.Select(e => e.ContentUid));
+            string advancedLevelContentUids = string.Join(",", advancedSimi.Select(e => e.ContentUid));
+
+            return new List<string> { beginnerLevelContentUids, intermediateLevelContentUids, advancedLevelContentUids };
+        }
+
+        private int comparer(LearnContentSimilarityObject a, LearnContentSimilarityObject b)
+        {
+            return a.Similarity.CompareTo(b.Similarity);
+        }
+        private double CosineSimilarity(double[] a, double[] b)
+        {
+            double aa = 0.0;
+            double bb = 0.0;
+            double ab = 0.0;
+
+            for(int i=0; i<a.Length; i++)
+            {
+                aa += a[i] * a[i];
+                bb += b[i] * b[i];
+                ab += a[i] * b[i];
+            }
+
+            // do not forget degenerated cases: all-zeroes vectors 
+            if (aa == 0)
+                return bb == 0 ? 1.0 : 0.0;
+            else if (bb == 0)
+                return 0.0;
+            else
+                return ab / Math.Sqrt(aa) / Math.Sqrt(bb);
+        }
 
         //[FunctionName("LearnContentRecommenderApi")]
         //public static async Task<IActionResult> Run(

@@ -11,6 +11,10 @@ namespace Edna.LearnContentRecommender
                 .ForMember(entity => entity.RowKey, expression => expression.MapFrom(dto => dto.Level))
                 .ReverseMap()
                 .ForMember(dto => dto.RecommenderId, expression => expression.MapFrom(entity => entity.ToRecommenderId()));
+
+            CreateMap<LearnContentEmbeddingDto, LearnContentEmbeddingEntity>()
+                .ForMember(entity => entity.PartitionKey, expression => expression.MapFrom(dto => dto.ContentUid))
+                .ForMember(EntityProperty => EntityProperty.RowKey, expression => expression.MapFrom(dto => dto.Level));
         }
     }
 }

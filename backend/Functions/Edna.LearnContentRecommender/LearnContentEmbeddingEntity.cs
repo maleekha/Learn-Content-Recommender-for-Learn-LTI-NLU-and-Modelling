@@ -7,5 +7,11 @@ namespace Edna.LearnContentRecommender
 {
     class LearnContentEmbeddingEntity : TableEntity
     {
+        public string ContentUid;
+
+        public string Level;
+
+        public string Embedding;
+
     }
 }
