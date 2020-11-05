@@ -7,6 +7,6 @@ namespace Edna.LearnContentRecommender
 {
     public class LearnContentEmbeddingEntity : TableEntity
     {
-        public string Embedding;
+        public string Embedding { get; set; }
     }
 }

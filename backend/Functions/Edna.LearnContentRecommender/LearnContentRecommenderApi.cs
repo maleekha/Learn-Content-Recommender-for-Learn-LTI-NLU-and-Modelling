@@ -20,6 +20,7 @@ using System.IO;
 using System.Numerics;
 using Edna.Bindings.Assignment.Attributes;
 using Edna.Bindings.Assignment.Models;
+using System.Text;
 
 namespace Edna.LearnContentRecommender
 {
@@ -29,7 +30,7 @@ namespace Edna.LearnContentRecommender
         private const string RecommendedLearnContentTableName = "RecommendedLearnContent";
         private const string LearnContentUrlIdentifierKey = "WT.mc_id";
         private const string LearnContentUrlIdentifierValue = "Edna";
-        private const string NLU_MODEL = "";
+        private const string NLU_MODEL = "http://2160021e-2abf-4fc7-ad5f-690b721272f9.eastus.azurecontainer.io/score";
         private const double THRESHOLD = 0.70;
 
         private readonly ILogger<LearnContentRecommenderApi> _logger;
@@ -72,47 +73,41 @@ namespace Edna.LearnContentRecommender
                 levels.Add(contentJToken["levels"][0].ToString());
             }
 
-            var obj = new
-            {
-                data = title_desc
-            };
-
+            List<string> learnContentEmbeddings = new List<string>();
             HttpClient client2 = _httpClientFactory.CreateClient();
-            HttpResponseMessage resp = await client2.PostAsJsonAsync(NLU_MODEL, obj);
-            string respString = await resp.Content.ReadAsStringAsync();
-            string[] learnContentEmbeddings = JsonConvert.DeserializeObject<string[]>(respString);
+            client2.Timeout = TimeSpan.FromMinutes(5);
 
-            // store in table
-
-            TableBatchOperation batchOperation = new TableBatchOperation();
-            List<LearnContentEmbeddingEntity> learnContentEmbeddingEntities = new List<LearnContentEmbeddingEntity>();
-            for(int i=0; i< contentUids.Count; i++)
+            const int num = 50;
+            for(int i=0; i+num<title_desc.Count; i+=num)
             {
-                LearnContentEmbeddingEntity temp = new LearnContentEmbeddingEntity { PartitionKey = contentUids[i], RowKey = levels[i], Embedding = learnContentEmbeddings[i]};
+                var obj = new
+                {
+                    data = title_desc.Skip(i).Take(num)
+                };
+
+                var a = new StringContent(JsonConvert.SerializeObject(obj));
+                HttpResponseMessage resp = await client2.PostAsync(NLU_MODEL, new StringContent(JsonConvert.SerializeObject(obj), Encoding.UTF8, "application/json"));
+                string respString = await resp.Content.ReadAsStringAsync();
+                learnContentEmbeddings.AddRange(CustomStringParser(respString));
+            }            
+
+            List<LearnContentEmbeddingEntity> learnContentEmbeddingEntities = new List<LearnContentEmbeddingEntity>();
+            for(int i=0; i< contentUids.Count; i++) 
+            {
+                LearnContentEmbeddingEntity temp = new LearnContentEmbeddingEntity { PartitionKey = contentUids[i], RowKey = levels[i], Embedding = learnContentEmbeddings[i], ETag="*"};
                 TableOperation insertEmbedding = TableOperation.Insert(temp);
-                batchOperation.Insert(temp);
+                await learnContentEmbeddingsTable.ExecuteAsync(insertEmbedding);
             }
-
-            await learnContentEmbeddingsTable.ExecuteBatchAsync(batchOperation);
         }
 
-        private string GetLearnContentDescription(JToken contentJToken)
-        {
-            return contentJToken["title"].ToString() + " " + contentJToken["summary"].ToString();
-        }
+        private string[] CustomStringParser(string resp)
+        {            
+            string str = new string(resp.Replace(@"\", "").Replace("\"", "")
+                        .ToCharArray().Where(ch => !Char.IsWhiteSpace(ch)).ToArray())
+                        .Replace("[[", "")
+                        .Replace("]]", "");
 
-        [FunctionName(nameof(GetLearnCatalog))]
-        public async Task<IActionResult> GetLearnCatalog(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "learn-catalog")] HttpRequest req)
-        {
-            using HttpClient client = _httpClientFactory.CreateClient();
-            string catalogString = await client.GetStringAsync($"https://docs.microsoft.com/api/learn/catalog?clientId={LearnContentUrlIdentifierValue}");
-
-            JObject catalogJObject = JsonConvert.DeserializeObject<JObject>(catalogString);
-            catalogJObject["modules"].ForEach(ChangeUrlQueryToEdnaIdentifier);
-            catalogJObject["learningPaths"].ForEach(ChangeUrlQueryToEdnaIdentifier);
-
-            return new OkObjectResult(JsonConvert.SerializeObject(catalogJObject));
+            return new string(str.ToCharArray().Where(ch => !Char.IsWhiteSpace(ch)).ToArray()).Split("],[");           
         }
 
         private void ChangeUrlQueryToEdnaIdentifier(JToken contentJToken)
@@ -147,7 +142,7 @@ namespace Edna.LearnContentRecommender
             return new OkObjectResult(assignmentRecommendedLearnContentDtos);
         }
 
-        private async Task<List<RecommendedLearnContentEntity>> GetAllRecommendedLearnContentEntities(CloudTable recommendedLearnContentTable,CloudTable learnContentEmbeddingsTableName, string assignmentId, string assignmentTitle)
+        private async Task<List<RecommendedLearnContentEntity>> GetAllRecommendedLearnContentEntities(CloudTable recommendedLearnContentTable, CloudTable learnContentEmbeddingsTableName, string assignmentId, string assignmentTitle)
         {
             List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = new List<RecommendedLearnContentEntity>();
 
@@ -163,7 +158,7 @@ namespace Edna.LearnContentRecommender
             if (recommendedBeginnerLearnContentEntity is null && recommendedIntermediateLearnContentEntity is null && recommendedAdvancedLearnContentEntity is null)
             {
                 // first time call
-                var recCourses = await GetRecommendedLearnContentFromAssignmentTitle_V2(assignmentTitle);
+                var recCourses = await GetRecommendedLearnContentFromAssignmentTitle_V1(learnContentEmbeddingsTableName, assignmentTitle);
 
                 RecommendedLearnContentEntity beginnerEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "beginner", RecommendedContentUids = recCourses[0] , ETag="*" };
                 TableOperation insertBeginnerOp = TableOperation.Insert(beginnerEntity);
@@ -307,22 +302,23 @@ namespace Edna.LearnContentRecommender
             HttpClient client = _httpClientFactory.CreateClient();
             HttpResponseMessage resp = await client.PostAsJsonAsync(NLU_MODEL, obj);
             string respString = await resp.Content.ReadAsStringAsync();
-            double[] assignmentTitleEmbedding = JsonConvert.DeserializeObject<double[][]>(respString)[0];
+            string parsed_string = CustomStringParser(respString)[0];
+            double[] assignmentTitleEmbedding = parsed_string.Split(',').Where(x => x.Trim().Length != 0).Select(b => double.Parse(b.Trim())).ToArray();
 
             List<LearnContentSimilarityObject> simi = new List<LearnContentSimilarityObject>();
 
             foreach(LearnContentEmbeddingEntity e in learnContentEmbeddings)
             {
-                double[] emb = e.Embedding.Split(',').Select(double.Parse).ToArray();
+                double[] emb = e.Embedding.Split(',').Where(x => x.Trim().Length != 0).Select(b => double.Parse(b.Trim())).ToArray();
                 double similarity = CosineSimilarity(emb, assignmentTitleEmbedding);
-                simi.Append(new LearnContentSimilarityObject { ContentUid = e.PartitionKey, Level = e.RowKey, Similarity = similarity });
+                simi.Add(new LearnContentSimilarityObject { ContentUid = e.PartitionKey, Level = e.RowKey, Similarity = similarity });
             }
 
             simi.Sort(comparer);
 
-            IEnumerable<LearnContentSimilarityObject> beginnerSimi = simi.Where(e => e.Level == "beginner").Take(3);
-            IEnumerable<LearnContentSimilarityObject> intermediateSimi = simi.Where(e => e.Level == "intermediate").Take(3);
-            IEnumerable<LearnContentSimilarityObject> advancedSimi = simi.Where(e => e.Level == "advanced").Take(3);
+            IEnumerable<LearnContentSimilarityObject> beginnerSimi = simi.Where(e => e.Level == "beginner" && e.Similarity > THRESHOLD).Take(3);
+            IEnumerable<LearnContentSimilarityObject> intermediateSimi = simi.Where(e => e.Level == "intermediate" && e.Similarity > THRESHOLD).Take(3);
+            IEnumerable<LearnContentSimilarityObject> advancedSimi = simi.Where(e => e.Level == "advanced" && e.Similarity > THRESHOLD).Take(3);
 
             string beginnerLevelContentUids = string.Join(",", beginnerSimi.Select(e => e.ContentUid));
             string intermediateLevelContentUids = string.Join(",", intermediateSimi.Select(e => e.ContentUid));
