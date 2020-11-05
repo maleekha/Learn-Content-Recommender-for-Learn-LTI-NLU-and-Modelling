@@ -43,6 +43,66 @@ namespace Edna.LearnContentRecommender
             _httpClientFactory = httpClientFactory;
         }
 
+        [FunctionName(nameof(InitializeEmbeddingsTable))]
+        public async void InitializeEmbeddingsTable(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "init-embeddings")] HttpRequest req,
+            [Table(LearnContentEmbeddingsTableName)] CloudTable learnContentEmbeddingsTable
+         )
+        {
+            using HttpClient client = _httpClientFactory.CreateClient();
+            string catalogString = await client.GetStringAsync($"https://docs.microsoft.com/api/learn/catalog?clientId={LearnContentUrlIdentifierValue}");
+
+            JObject catalogJObject = JsonConvert.DeserializeObject<JObject>(catalogString);
+            catalogJObject["modules"].ForEach(ChangeUrlQueryToEdnaIdentifier);
+            catalogJObject["learningPaths"].ForEach(ChangeUrlQueryToEdnaIdentifier);
+
+            List<string> title_desc = new List<string>();
+            List<string> contentUids = new List<string>();
+            List<string> levels = new List<string>();
+
+            foreach (var contentJToken in catalogJObject["modules"])
+            {
+                title_desc.Add(contentJToken["title"].ToString() + " " + contentJToken["summary"].ToString());
+                contentUids.Add(contentJToken["uid"].ToString());
+                levels.Add(contentJToken["levels"][0].ToString());
+            }
+            foreach (var contentJToken in catalogJObject["learningPaths"])
+            {
+                title_desc.Add(contentJToken["title"].ToString() + " " + contentJToken["summary"].ToString());
+                contentUids.Add(contentJToken["uid"].ToString());
+                levels.Add(contentJToken["levels"][0].ToString());
+            }
+
+            var obj = new
+            {
+                data = title_desc
+            };
+
+            HttpClient client2 = _httpClientFactory.CreateClient();
+            HttpResponseMessage resp = await client2.PostAsJsonAsync(NLU_MODEL, obj);
+            string respString = await resp.Content.ReadAsStringAsync();
+            string[] learnContentEmbeddings = JsonConvert.DeserializeObject<string[]>(respString);
+
+            // store in table
+
+            TableBatchOperation batchOperation = new TableBatchOperation();
+            List<LearnContentEmbeddingEntity> learnContentEmbeddingEntities = new List<LearnContentEmbeddingEntity>();
+            for(int i=0; i< contentUids.Count; i++)
+            {
+                LearnContentEmbeddingEntity temp = new LearnContentEmbeddingEntity { ContentUid = contentUids[i], Level = levels[i], Embedding = learnContentEmbeddings[i]};
+                TableOperation insertEmbedding = TableOperation.Insert(temp);
+                batchOperation.Insert(temp);
+            }
+
+            await learnContentEmbeddingsTable.ExecuteBatchAsync(batchOperation);
+        }
+
+        private string GetLearnContentDescription(JToken contentJToken)
+        {
+            return contentJToken["title"].ToString() + " " + contentJToken["summary"].ToString();
+        }
+
+
         [FunctionName(nameof(GetLearnCatalog))]
         public async Task<IActionResult> GetLearnCatalog(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "learn-catalog")] HttpRequest req)
@@ -194,7 +254,6 @@ namespace Edna.LearnContentRecommender
 
         }
 
-
         private async Task<RecommendedLearnContentEntity> GetRecommendedLearnContentEntities(CloudTable recommendedLearnContentTable, string partitionKey, string rowKey)
         {
             TableOperation retrieveOperation = TableOperation.Retrieve<RecommendedLearnContentEntity>(partitionKey, rowKey);
@@ -230,7 +289,6 @@ namespace Edna.LearnContentRecommender
             return new List<string> { beginnerLevelContentUids, intermediateLevelContentUids, advancedLevelContentUids };            
         }
 
-
         private async Task<List<string>> GetRecommendedLearnContentFromAssignmentTitle_V1([Table(LearnContentEmbeddingsTableName)] CloudTable learnContentEmbeddingsTable, string assignmentTitle)
         {
             TableQuery<LearnContentEmbeddingEntity> q = new TableQuery<LearnContentEmbeddingEntity>();
@@ -241,26 +299,26 @@ namespace Edna.LearnContentRecommender
             {
                 TableQuerySegment<LearnContentEmbeddingEntity> queryResultSegment = await learnContentEmbeddingsTable.ExecuteQuerySegmentedAsync(q, continuationToken);
                 continuationToken = queryResultSegment.ContinuationToken;
-
                 learnContentEmbeddings.AddRange(queryResultSegment.Results);
 
             } while (continuationToken != null);
 
+            List<string> title = new List<string>() { assignmentTitle };
             var obj = new
             {
-                data = assignmentTitle
+                data = title
             };
 
             HttpClient client = _httpClientFactory.CreateClient();
             HttpResponseMessage resp = await client.PostAsJsonAsync(NLU_MODEL, obj);
             string respString = await resp.Content.ReadAsStringAsync();
-            double[] assignmentTitleEmbedding = JsonConvert.DeserializeObject<double[]>(respString);
+            double[] assignmentTitleEmbedding = JsonConvert.DeserializeObject<double[][]>(respString)[0];
 
             List<LearnContentSimilarityObject> simi = new List<LearnContentSimilarityObject>();
 
             foreach(LearnContentEmbeddingEntity e in learnContentEmbeddings)
             {
-                double[] emb = Array.ConvertAll(e.Embedding.Split(','), Double.Parse);
+                double[] emb = e.Embedding.Split(',').Select(double.Parse).ToArray();
                 double similarity = CosineSimilarity(emb, assignmentTitleEmbedding);
                 simi.Append(new LearnContentSimilarityObject { ContentUid = e.ContentUid, Level = e.Level, Similarity = similarity });
             }
@@ -282,6 +340,7 @@ namespace Edna.LearnContentRecommender
         {
             return a.Similarity.CompareTo(b.Similarity);
         }
+        
         private double CosineSimilarity(double[] a, double[] b)
         {
             double aa = 0.0;
@@ -304,6 +363,7 @@ namespace Edna.LearnContentRecommender
                 return ab / Math.Sqrt(aa) / Math.Sqrt(bb);
         }
 
+        
         //[FunctionName("LearnContentRecommenderApi")]
         //public static async Task<IActionResult> Run(
         //    [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
