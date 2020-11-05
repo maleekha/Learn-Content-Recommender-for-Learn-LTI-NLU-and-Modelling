@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Microsoft.WindowsAzure.Storage.Table;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Edna.LearnContentRecommender
 {
-    class LearnContentEmbeddingEntity
+    class LearnContentEmbeddingEntity : TableEntity
     {
     }
 }

@@ -6,7 +6,7 @@ namespace Edna.LearnContentRecommender
 {
     public class LearnContentEmbeddingDto
     {
-        string ContentUid { get; set; }
-        string Embedding { get; set; }
+        public string ContentUid { get; set; }
+        public string Embedding { get; set; }
     }
 }
