@@ -46,8 +46,7 @@ namespace Edna.LearnContentRecommender
         [FunctionName(nameof(InitializeEmbeddingsTable))]
         public async void InitializeEmbeddingsTable(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "init-embeddings")] HttpRequest req,
-            [Table(LearnContentEmbeddingsTableName)] CloudTable learnContentEmbeddingsTable
-         )
+            [Table(LearnContentEmbeddingsTableName)] CloudTable learnContentEmbeddingsTable)
         {
             using HttpClient client = _httpClientFactory.CreateClient();
             string catalogString = await client.GetStringAsync($"https://docs.microsoft.com/api/learn/catalog?clientId={LearnContentUrlIdentifierValue}");
@@ -89,7 +88,7 @@ namespace Edna.LearnContentRecommender
             List<LearnContentEmbeddingEntity> learnContentEmbeddingEntities = new List<LearnContentEmbeddingEntity>();
             for(int i=0; i< contentUids.Count; i++)
             {
-                LearnContentEmbeddingEntity temp = new LearnContentEmbeddingEntity { ContentUid = contentUids[i], Level = levels[i], Embedding = learnContentEmbeddings[i]};
+                LearnContentEmbeddingEntity temp = new LearnContentEmbeddingEntity { PartitionKey = contentUids[i], RowKey = levels[i], Embedding = learnContentEmbeddings[i]};
                 TableOperation insertEmbedding = TableOperation.Insert(temp);
                 batchOperation.Insert(temp);
             }
@@ -101,7 +100,6 @@ namespace Edna.LearnContentRecommender
         {
             return contentJToken["title"].ToString() + " " + contentJToken["summary"].ToString();
         }
-
 
         [FunctionName(nameof(GetLearnCatalog))]
         public async Task<IActionResult> GetLearnCatalog(
@@ -132,11 +130,6 @@ namespace Edna.LearnContentRecommender
             contentJToken["url"] = newUriBuilder.Uri.ToString();
         }
 
-
-        //one func to get results from model and save results in a table 
-        //one func to get results of similarity bw assignment title and all courses and save in a table as recommender vs recommended courses
-        //one func to get saved results from table for a particular assignment id
-
         [FunctionName(nameof(GetRecommendedLearnContent))]
         public async Task<IActionResult> GetRecommendedLearnContent(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "assignments/{assignmentId}/recommended-learn-content")] HttpRequest req,
@@ -154,29 +147,35 @@ namespace Edna.LearnContentRecommender
             return new OkObjectResult(assignmentRecommendedLearnContentDtos);
         }
 
-        private async Task<List<RecommendedLearnContentEntity>> GetAllRecommendedLearnContentEntities(CloudTable recommendedLearnContentTable, [Table(LearnContentEmbeddingsTableName)] CloudTable learnContentEmbeddingsTableName, string assignmentId, string assignmentTtitle)
+        private async Task<List<RecommendedLearnContentEntity>> GetAllRecommendedLearnContentEntities(CloudTable recommendedLearnContentTable,CloudTable learnContentEmbeddingsTableName, string assignmentId, string assignmentTitle)
         {
             List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = new List<RecommendedLearnContentEntity>();
 
             //beginner
             RecommendedLearnContentEntity recommendedBeginnerLearnContentEntity = await GetRecommendedLearnContentEntities(recommendedLearnContentTable, assignmentId, "beginner");
             
-            if(recommendedBeginnerLearnContentEntity is null)
+            //intermediate
+            RecommendedLearnContentEntity recommendedIntermediateLearnContentEntity = await GetRecommendedLearnContentEntities(recommendedLearnContentTable, assignmentId, "intermediate");
+                        
+            //advanced
+            RecommendedLearnContentEntity recommendedAdvancedLearnContentEntity = await GetRecommendedLearnContentEntities(recommendedLearnContentTable, assignmentId, "advanced");
+
+            if (recommendedBeginnerLearnContentEntity is null && recommendedIntermediateLearnContentEntity is null && recommendedAdvancedLearnContentEntity is null)
             {
                 // first time call
-                var recCourses = await GetRecommendedLearnContentFromAssignmentTitle_V2(assignmentTtitle);
+                var recCourses = await GetRecommendedLearnContentFromAssignmentTitle_V2(assignmentTitle);
 
-                RecommendedLearnContentEntity beginnerEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "beginner", RecommendedContentUids = recCourses[0] };
+                RecommendedLearnContentEntity beginnerEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "beginner", RecommendedContentUids = recCourses[0] , ETag="*" };
                 TableOperation insertBeginnerOp = TableOperation.Insert(beginnerEntity);
                 await recommendedLearnContentTable.ExecuteAsync(insertBeginnerOp);
                 assignmentRecommendedLearnContent.Add(beginnerEntity);
 
-                RecommendedLearnContentEntity intermediateEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "intermediate", RecommendedContentUids = recCourses[1] };
+                RecommendedLearnContentEntity intermediateEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "intermediate", RecommendedContentUids = recCourses[1], ETag = "*" };
                 TableOperation insertIntermediateOp = TableOperation.Insert(intermediateEntity);
                 await recommendedLearnContentTable.ExecuteAsync(insertIntermediateOp);
                 assignmentRecommendedLearnContent.Add(intermediateEntity);
 
-                RecommendedLearnContentEntity advancedEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "advanced", RecommendedContentUids = recCourses[2] };
+                RecommendedLearnContentEntity advancedEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "advanced", RecommendedContentUids = recCourses[2], ETag = "*" };
                 TableOperation insertAdvancedOp = TableOperation.Insert(advancedEntity);
                 await recommendedLearnContentTable.ExecuteAsync(insertAdvancedOp);
                 assignmentRecommendedLearnContent.Add(advancedEntity);
@@ -184,16 +183,12 @@ namespace Edna.LearnContentRecommender
                 return assignmentRecommendedLearnContent;
             }
 
-            assignmentRecommendedLearnContent.Add(recommendedBeginnerLearnContentEntity);
-
-            //intermediate
-            RecommendedLearnContentEntity recommendedIntermediateLearnContentEntity = await GetRecommendedLearnContentEntities(recommendedLearnContentTable, assignmentId, "intermediate");
-            assignmentRecommendedLearnContent.Add(recommendedIntermediateLearnContentEntity);
-            
-            //advanced
-            RecommendedLearnContentEntity recommendedAdvancedLearnContentEntity = await GetRecommendedLearnContentEntities(recommendedLearnContentTable, assignmentId, "advanced");
-            assignmentRecommendedLearnContent.Add(recommendedAdvancedLearnContentEntity);
-
+            else
+            {
+                assignmentRecommendedLearnContent.Add(recommendedBeginnerLearnContentEntity);
+                assignmentRecommendedLearnContent.Add(recommendedIntermediateLearnContentEntity);
+                assignmentRecommendedLearnContent.Add(recommendedAdvancedLearnContentEntity);
+            }
             return assignmentRecommendedLearnContent;
 
             //beginner
@@ -289,7 +284,7 @@ namespace Edna.LearnContentRecommender
             return new List<string> { beginnerLevelContentUids, intermediateLevelContentUids, advancedLevelContentUids };            
         }
 
-        private async Task<List<string>> GetRecommendedLearnContentFromAssignmentTitle_V1([Table(LearnContentEmbeddingsTableName)] CloudTable learnContentEmbeddingsTable, string assignmentTitle)
+        private async Task<List<string>> GetRecommendedLearnContentFromAssignmentTitle_V1(CloudTable learnContentEmbeddingsTable, string assignmentTitle)
         {
             TableQuery<LearnContentEmbeddingEntity> q = new TableQuery<LearnContentEmbeddingEntity>();
             TableContinuationToken continuationToken = new TableContinuationToken();
@@ -320,7 +315,7 @@ namespace Edna.LearnContentRecommender
             {
                 double[] emb = e.Embedding.Split(',').Select(double.Parse).ToArray();
                 double similarity = CosineSimilarity(emb, assignmentTitleEmbedding);
-                simi.Append(new LearnContentSimilarityObject { ContentUid = e.ContentUid, Level = e.Level, Similarity = similarity });
+                simi.Append(new LearnContentSimilarityObject { ContentUid = e.PartitionKey, Level = e.RowKey, Similarity = similarity });
             }
 
             simi.Sort(comparer);
@@ -360,30 +355,8 @@ namespace Edna.LearnContentRecommender
             else if (bb == 0)
                 return 0.0;
             else
-                return ab / Math.Sqrt(aa) / Math.Sqrt(bb);
+                return ab / (Math.Sqrt(aa) * Math.Sqrt(bb));
         }
-
-        
-        //[FunctionName("LearnContentRecommenderApi")]
-        //public static async Task<IActionResult> Run(
-        //    [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = null)] HttpRequest req,
-        //    ILogger log)
-        //{
-        //    log.LogInformation("C# HTTP trigger function processed a request.");
-
-        //    string name = req.Query["name"];
-
-        //    string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-        //    dynamic data = JsonConvert.DeserializeObject(requestBody);
-        //    name = name ?? data?.name;
-
-        //    string responseMessage = string.IsNullOrEmpty(name)
-        //        ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
-        //        : $"Hello, {name}. This HTTP triggered function executed successfully.";
-
-        //    return new OkObjectResult(responseMessage);
-        //}
-
 
     }
 }
