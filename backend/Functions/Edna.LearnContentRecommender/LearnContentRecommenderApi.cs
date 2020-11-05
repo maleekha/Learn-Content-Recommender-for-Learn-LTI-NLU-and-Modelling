@@ -18,6 +18,8 @@ using Newtonsoft.Json.Linq;
 using Edna.Utils.Http;
 using System.IO;
 using System.Numerics;
+using Edna.Bindings.Assignment.Attributes;
+using Edna.Bindings.Assignment.Models;
 
 namespace Edna.LearnContentRecommender
 {
@@ -27,6 +29,8 @@ namespace Edna.LearnContentRecommender
         private const string RecommendedLearnContentTableName = "RecommendedLearnContent";
         private const string LearnContentUrlIdentifierKey = "WT.mc_id";
         private const string LearnContentUrlIdentifierValue = "Edna";
+        private const string NLU_MODEL = "";
+        private const double THRESHOLD = 0.70;
 
         private readonly ILogger<LearnContentRecommenderApi> _logger;
         private readonly IMapper _mapper;
@@ -77,23 +81,48 @@ namespace Edna.LearnContentRecommender
         public async Task<IActionResult> GetRecommendedLearnContent(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "assignments/{assignmentId}/recommended-learn-content")] HttpRequest req,
             [Table(RecommendedLearnContentTableName)] CloudTable recommendedLearnContentTable,
+            [Assignment(AssignmentId = "{assignmentId}")] Assignment assignment,
             string assignmentId)
         {
             _logger.LogInformation($"Fetching all recommended learn content for assignment {assignmentId}.");
 
-            List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = await GetAllRecommendedLearnContentEntities(recommendedLearnContentTable, assignmentId);
+            List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = await GetAllRecommendedLearnContentEntities(recommendedLearnContentTable, assignmentId, assignment.Name);
 
             IEnumerable<RecommendedLearnContentDto> assignmentRecommendedLearnContentDtos = assignmentRecommendedLearnContent.Select(_mapper.Map<RecommendedLearnContentDto>);
 
             return new OkObjectResult(assignmentRecommendedLearnContentDtos);
         }
 
-        private async Task<List<RecommendedLearnContentEntity>> GetAllRecommendedLearnContentEntities(CloudTable recommendedLearnContentTable, string assignmentId)
+        private async Task<List<RecommendedLearnContentEntity>> GetAllRecommendedLearnContentEntities(CloudTable recommendedLearnContentTable, string assignmentId, string assignmentTtitle)
         {
             List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = new List<RecommendedLearnContentEntity>();
 
             //beginner
             RecommendedLearnContentEntity recommendedBeginnerLearnContentEntity = await GetRecommendedLearnContentEntities(recommendedLearnContentTable, assignmentId, "beginner");
+            
+            if(recommendedBeginnerLearnContentEntity is null)
+            {
+                // first time call
+                var recCourses = await GetRecommendedLearnContentFromAssignmentTitle(assignmentTtitle);
+
+                RecommendedLearnContentEntity beginnerEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "beginner", RecommendedContentUids = recCourses[0] };
+                TableOperation insertBeginnerOp = TableOperation.Insert(beginnerEntity);
+                await recommendedLearnContentTable.ExecuteAsync(insertBeginnerOp);
+                assignmentRecommendedLearnContent.Add(beginnerEntity);
+
+                RecommendedLearnContentEntity intermediateEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "intermediate", RecommendedContentUids = recCourses[1] };
+                TableOperation insertIntermediateOp = TableOperation.Insert(intermediateEntity);
+                await recommendedLearnContentTable.ExecuteAsync(insertIntermediateOp);
+                assignmentRecommendedLearnContent.Add(intermediateEntity);
+
+                RecommendedLearnContentEntity advancedEntity = new RecommendedLearnContentEntity { PartitionKey = assignmentId, RowKey = "advanced", RecommendedContentUids = recCourses[2] };
+                TableOperation insertAdvancedOp = TableOperation.Insert(advancedEntity);
+                await recommendedLearnContentTable.ExecuteAsync(insertAdvancedOp);
+                assignmentRecommendedLearnContent.Add(advancedEntity);
+
+                return assignmentRecommendedLearnContent;
+            }
+
             assignmentRecommendedLearnContent.Add(recommendedBeginnerLearnContentEntity);
 
             //intermediate
@@ -170,16 +199,37 @@ namespace Edna.LearnContentRecommender
             TableOperation retrieveOperation = TableOperation.Retrieve<RecommendedLearnContentEntity>(partitionKey, rowKey);
 
             TableResult retrieveResult = await recommendedLearnContentTable.ExecuteAsync(retrieveOperation);
-
             if (retrieveResult.Result == null || !(retrieveResult.Result is RecommendedLearnContentEntity assignmentEntity))
                 return null;
-
             return assignmentEntity;
+        }
 
+        private async Task<List<string>> GetRecommendedLearnContentFromAssignmentTitle(string assignmentTitle)
+        {
+            List<string> data = new List<string>() { assignmentTitle };
+            var jsonContent = JsonConvert.SerializeObject(data);
+            var obj = new
+            {
+                data = assignmentTitle
+            };
+            HttpClient client = _httpClientFactory.CreateClient();
+            HttpResponseMessage resp = await client.PostAsJsonAsync(NLU_MODEL, obj);
+            string catalog_similarity = await resp.Content.ReadAsStringAsync();
+
+            List<LearnContentSimilarityObject> similarityList = JsonConvert.DeserializeObject<List<LearnContentSimilarityObject>>(catalog_similarity);
+
+            IEnumerable<LearnContentSimilarityObject> beginnerLevelCourses = similarityList.Where(e => e.Level.CompareTo(Level.Beginner) == 0 && e.Similarity > THRESHOLD).Take(3);
+            IEnumerable<LearnContentSimilarityObject> intermediateLevelCourses = similarityList.Where(e => e.Level.CompareTo(Level.Intermediate) == 0 && e.Similarity > THRESHOLD).Take(3);
+            IEnumerable<LearnContentSimilarityObject> advancedLevelCourses = similarityList.Where(e => e.Level.CompareTo(Level.Advanced) == 0 && e.Similarity > THRESHOLD).Take(3);
+
+            string beginnerLevelContentUids = string.Join(",", beginnerLevelCourses.Select(e => e.ContentUid));
+            string intermediateLevelContentUids = string.Join(",", intermediateLevelCourses.Select(e => e.ContentUid));
+            string advancedLevelContentUids = string.Join(",", advancedLevelCourses.Select(e => e.ContentUid));
+            
+            return new List<string> { beginnerLevelContentUids, intermediateLevelContentUids, advancedLevelContentUids };            
         }
 
 
-        
 
 
         //[FunctionName("LearnContentRecommenderApi")]
