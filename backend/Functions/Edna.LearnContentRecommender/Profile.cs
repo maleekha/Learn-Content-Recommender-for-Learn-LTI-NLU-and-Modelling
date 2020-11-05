@@ -6,12 +6,11 @@ namespace Edna.LearnContentRecommender
     {
         public Profile()
         {
-            CreateMap<LearnContentRecommenderDto, LearnContentRecommenderEntity>()
-                .ForMember(entity => entity.PartitionKey, expression => expression.MapFrom(dto => dto.RecommenderId))
-                .ForMember(entity => entity.RowKey, expression => expression.MapFrom(dto => dto.RecommendedContentUids))
+            CreateMap<RecommendedLearnContentDto, RecommendedLearnContentEntity>()
+                .ForMember(entity => entity.PartitionKey, expression => expression.MapFrom(dto => dto.AssignmentId))
+                .ForMember(entity => entity.RowKey, expression => expression.MapFrom(dto => dto.Level))
                 .ReverseMap()
-                .ForMember(dto => dto.AssignmentId, expression => expression.MapFrom(entity => entity.PartitionKey.ToAssignmentId()))
-                .ForMember(dto => dto.Level, expression => expression.MapFrom(entity => entity.PartitionKey.ToLevel()));
+                .ForMember(dto => dto.RecommenderId, expression => expression.MapFrom(entity => entity.ToRecommenderId()));
         }
     }
 }
