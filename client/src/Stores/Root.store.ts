@@ -9,6 +9,7 @@ import { UsersStore } from './Users.store';
 import { AssignmentLinksStore } from './AssignmentLinks.store';
 import { MicrosoftLearnStore } from './MicrosoftLearn.store';
 import { PlatformStore } from './Platform.store';
+import { RecommendedLearnContentStore } from './RecommendedLearnContent.store';
 
 export class RootStore {
   assignmentStore = new AssignmentStore();
@@ -16,6 +17,7 @@ export class RootStore {
   assignmentLinksStore = new AssignmentLinksStore();
   microsoftLearnStore = new MicrosoftLearnStore();
   platformStore = new PlatformStore();
+  recommendedLearnContentStore = new RecommendedLearnContentStore();
 
   constructor() {
     const childStores: ChildStore[] = Object.keys(this)
