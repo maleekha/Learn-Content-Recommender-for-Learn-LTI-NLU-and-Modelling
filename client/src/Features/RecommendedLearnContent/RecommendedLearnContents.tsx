@@ -27,7 +27,7 @@ const RecommendedLearnContentsInner = ({
   const intermediateContentUid: string[] = recommendedLearnContentStore.recommendedItems[1]?.recommendedContentUids.split(',');
   const advancedContentUid: string[] = recommendedLearnContentStore.recommendedItems[2]?.recommendedContentUids.split(',');
 
-  console.log(beginnerContentUid, intermediateContentUid, advancedContentUid, "contentuids");
+  // console.log(beginnerContentUid, intermediateContentUid, advancedContentUid, "contentuids");
  // const beginnerContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
  // const intermediateContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
  // const advancedContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
