@@ -68,8 +68,8 @@ const MicrosoftLearnRecommendedContentItemInner = ( {styles, recommendedContentI
         }
         return (
         <div className={mergeStyles(classes.root, AnimationClassNames.slideUpIn20)} onClick = {(event) => learnStore.toggleItemSelection(item.uid)}>
-            <div className={mergeStyles(classes.topBar)}></div>
-            <div style={{display: 'flex', flexDirection: 'row'}}>
+            {/* <div className={mergeStyles(classes.topBar)}></div> */}
+            {/* <div style={{display: 'flex', flexDirection: 'row'}}> */}
             <Image src={item.icon_url} className={classes.itemIcon} imageFit={ImageFit.contain} />
             <div className={classes.content}>
               <Link target="_blank" href={item.url}>
@@ -83,18 +83,19 @@ const MicrosoftLearnRecommendedContentItemInner = ( {styles, recommendedContentI
                 </TooltipHost>
               </Link>
               <div className={classes.details}>
-                <Text variant="mediumPlus" className={classes.info}>
+                <Text variant="mediumPlus" className={classes.info} style={{color: level=='beginner'? 'green' : level=='intermediate'? '#DAA520' : '#800000'}}>
                   {level.charAt(0).toUpperCase()+level.slice(1)}
                 </Text>
                 <FontIcon iconName="LocationDot" className={classes.dot} />
-                <Text variant="mediumPlus" className={classes.info}>
+                <Text variant="mediumPlus" className={classes.info} 
+                >
                   {getTypeText(item.type)}
                 </Text> 
               </div>
             </div>
             <Checkbox styles={checkboxClass} checked={isSelected} onClick={event => event.stopPropagation()} />
             </div>
-          </div>
+        //   </div>
 
         )
     })
@@ -112,14 +113,13 @@ export const microsoftLearnRecommendedItemStyles = ({ theme, level, isSelected }
     root: [
       mergeStyles(getCommonSpacingStyle(theme), {
         boxSizing: 'border-box',
-        width: `calc(100% - ${getCommonHorizontalSpacer(theme)} * 2)`,
+        width: `calc(100% - ${getCommonHorizontalSpacer(theme)} * 4)`,
         height: `calc(${theme.spacing.l1}*5 + ${theme.spacing.s1})`,
         borderRadius: 3,
         border: '1px solid black',
         borderColor: theme.palette.neutralTertiaryAlt,
         boxShadow: Depths.depth4,
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
         padding: theme.spacing.s1,
         margin: theme.spacing.l1
@@ -185,12 +185,17 @@ export const microsoftLearnRecommendedItemStyles = ({ theme, level, isSelected }
             borderStyle: 'solid',
             borderRadius: `${3}px ${3}px 0 0`,
             margin: `-10px 0px 10px 0px`
-          }
+        }
     ]
   });
   
   const hostStyles: Partial<ITooltipHostStyles> = {
-    root: { display: 'block' }
+    root: { 
+        display: 'block',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap'
+    }
   };
   
 export const MicrosoftLearnRecommendedContentItem = styled(MicrosoftLearnRecommendedContentItemInner, microsoftLearnRecommendedItemStyles)

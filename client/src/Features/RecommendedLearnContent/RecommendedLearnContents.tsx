@@ -27,6 +27,7 @@ const RecommendedLearnContentsInner = ({
   const intermediateContentUid: string[] = recommendedLearnContentStore.recommendedItems[1]?.recommendedContentUids.split(',');
   const advancedContentUid: string[] = recommendedLearnContentStore.recommendedItems[2]?.recommendedContentUids.split(',');
 
+  console.log(beginnerContentUid, intermediateContentUid, advancedContentUid, "contentuids");
  // const beginnerContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
  // const intermediateContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
  // const advancedContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
@@ -44,7 +45,7 @@ const RecommendedLearnContentsInner = ({
               <Spinner size={SpinnerSize.small} className={classes.spinner} />
             )}
           </div>
-          { beginnerContentUid && beginnerContentUid.length > 0 ? (
+          { beginnerContentUid && beginnerContentUid.length > 0 && !beginnerContentUid.includes("") ? (
           <div className={classes.list}>
             {beginnerContentUid.map( contentUid =>
               <MicrosoftLearnRecommendedContentItem recommendedContentId = {contentUid} level = "beginner" />
@@ -67,7 +68,7 @@ const RecommendedLearnContentsInner = ({
               <Spinner size={SpinnerSize.small} className={classes.spinner} />
             )}
           </div>
-          {intermediateContentUid && intermediateContentUid.length > 0 ? (
+          {intermediateContentUid && intermediateContentUid.length > 0 && !intermediateContentUid.includes("") ? (
           <div className={classes.list}>
             {intermediateContentUid.map( contentUid =>
               <MicrosoftLearnRecommendedContentItem recommendedContentId = {contentUid} level = "intermediate" />
@@ -90,7 +91,7 @@ const RecommendedLearnContentsInner = ({
               <Spinner size={SpinnerSize.small} className={classes.spinner} />
             )}
           </div>
-          {advancedContentUid && advancedContentUid.length > 0 ? (
+          {advancedContentUid && advancedContentUid.length > 0 && !advancedContentUid.includes("") ? (
           <div className={classes.list}>
             {advancedContentUid.map( contentUid =>
               <MicrosoftLearnRecommendedContentItem recommendedContentId = {contentUid} level = "advanced" />
@@ -141,6 +142,7 @@ const recommendedLearnContentsStyles = ({ theme }: IThemeOnlyProps): Recommended
     {
       display: 'grid',
       overflowY: 'hidden',
+      overflowX: 'hidden',
       gridRowGap: theme.spacing.m,
       height: 'min-content',
       gridTemplateColumns: `repeat(auto-fill,minmax(${FIXED_ITEM_WIDTH}px, 1fr) )`,
