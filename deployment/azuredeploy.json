@@ -363,6 +363,15 @@
                 "name": "Standard_LRS"
             }
         },
+         {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "name": "[concat('lcembedding' , variables('StorageAccountSuffix'))]",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Standard_LRS"
+            }
+        },
         {
             "type": "Microsoft.Insights/components",
             "apiVersion": "2018-05-01-preview",

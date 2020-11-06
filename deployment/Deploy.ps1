@@ -294,6 +294,7 @@ process {
             PlatformsFunctionAppName=$deploymentOutput.properties.outputs.PlatformsFunctionName.value;
             UsersFunctionAppName=$deploymentOutput.properties.outputs.UsersFunctionName.value;
             StaticWebsiteUrl=$deploymentOutput.properties.outputs.webClientURL.value;
+            LearnContentRecommenderFunctionAppName=$deploymentOutput.properties.outputs.LearnContentRecommenderFunctionName.value;
         }
         Update-ClientConfig @ClientUpdateConfigParams
     

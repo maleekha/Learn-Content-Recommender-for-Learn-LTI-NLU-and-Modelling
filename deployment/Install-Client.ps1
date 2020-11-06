@@ -12,7 +12,8 @@ enum DotEnv {
     REACT_APP_EDNA_LINKS_SERVICE_URL;
     REACT_APP_EDNA_LEARN_CONTENT;
     REACT_APP_EDNA_USERS_SERVICE_URL;
-    REACT_APP_EDNA_PLATFORM_SERVICE_URL
+    REACT_APP_EDNA_PLATFORM_SERVICE_URL;
+    REACT_APP_EDNA_RECOMMENDED_LEARN_CONTENT_URL
 }
 
 function Write-ClientDebugLog {
@@ -88,7 +89,9 @@ function Update-ClientConfig {
         [Parameter(Mandatory)]
         [string]$UsersFunctionAppName,
         [Parameter(Mandatory)]
-        [string]$StaticWebsiteUrl
+        [string]$StaticWebsiteUrl,
+        [Parameter(Mandatory)]
+        [string]$LearnContentRecommenderFunctionAppName
     )
 
 
@@ -103,7 +106,8 @@ function Update-ClientConfig {
         [DotEnv]::REACT_APP_EDNA_LINKS_SERVICE_URL="$(Get-ServiceUrl $LinksFunctionAppName)";
         [DotEnv]::REACT_APP_EDNA_ASSIGNMENT_SERVICE_URL="$(Get-ServiceUrl $AssignmentsFunctionAppName)";
         [DotEnv]::REACT_APP_EDNA_PLATFORM_SERVICE_URL="$(Get-ServiceUrl $PlatformsFunctionAppName)";
-        [DotEnv]::REACT_APP_EDNA_USERS_SERVICE_URL="$(Get-ServiceUrl $UsersFunctionAppName)"
+        [DotEnv]::REACT_APP_EDNA_USERS_SERVICE_URL="$(Get-ServiceUrl $UsersFunctionAppName)";
+        [DotEnv]::REACT_APP_EDNA_RECOMMENDED_LEARN_CONTENT_URL="$(Get-ServiceUrl $LearnContentRecommenderFunctionAppName)"
     }
     Write-ClientDebugLog -Message "Updated Configuration:-`n$($Config | Out-String)"
 
