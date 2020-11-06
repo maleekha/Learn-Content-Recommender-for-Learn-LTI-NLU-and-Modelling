@@ -16,12 +16,13 @@ import { FIXED_ITEM_WIDTH } from '../MicrosoftLearn/MicrosoftLearnStyles';
 import { useObserver } from 'mobx-react-lite';
 import { themedClassNames } from '../../Core/Utils/FluentUI';
 import { MicrosoftLearnSelectedItemShimmer } from '../MicrosoftLearn/MicrosoftLearnSelectedItemShimmer';
+import { MicrosoftLearnRecommendedContentItem } from '../MicrosoftLearn/MicrosoftLearnRecommendedContentItem';
 
 export type RecommendedLearnContentsStyles = SimpleComponentStyles<
   'root' | 'header' | 'title' | 'spinner' | 'list'
 >;
 
-const recommendedLearnContentsInner = ({
+const RecommendedLearnContentsInner = ({
   styles
 }: IStylesOnly<RecommendedLearnContentsStyles>): JSX.Element => {
   const recommendedLearnContentStore = useStore('recommendedLearnContentStore');
@@ -30,6 +31,9 @@ const recommendedLearnContentsInner = ({
   const intermediateContentUid: string[] = recommendedLearnContentStore.recommendedItems[1].recommendedContentUids.split(',');
   const advancedContentUid: string[] = recommendedLearnContentStore.recommendedItems[2].recommendedContentUids.split(',');
 
+ // const beginnerContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
+ // const intermediateContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
+ // const advancedContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
   return useObserver(() => {
     const classes = themedClassNames(styles);
 
@@ -46,13 +50,9 @@ const recommendedLearnContentsInner = ({
           </div>
           {beginnerContentUid.length > 0 && (
           <div className={classes.list}>
-              {recommendedLearnContentStore.recommendedItems?.map(item =>
-              learnStore.catalog ? (
-                <MicrosoftLearnSelectedItem key={item.recommendedContentUids} itemId={item.recommendedContentUids} /> // change this to recommendedLearnCOntentSelectedItem
-              ) : (
-                <MicrosoftLearnSelectedItemShimmer />
-              )
-              )}
+            {beginnerContentUid.map( contentUid =>
+              <MicrosoftLearnRecommendedContentItem recommendedContentId = {contentUid} level = "beginner" />
+            )}
           </div>
           )}
         </div>
@@ -67,12 +67,8 @@ const recommendedLearnContentsInner = ({
           </div>
           {intermediateContentUid.length>0 && (
           <div className={classes.list}>
-            {learnStore.selectedItems?.map(item =>
-              learnStore.catalog ? (
-                <MicrosoftLearnSelectedItem key={item.contentUid} itemId={item.contentUid} /> // change this to recommendedLearnCOntentSelectedItem
-              ) : (
-                <MicrosoftLearnSelectedItemShimmer />
-              )
+            {intermediateContentUid.map( contentUid =>
+              <MicrosoftLearnRecommendedContentItem recommendedContentId = {contentUid} level = "intermediate" />
             )}
           </div>
           )}
@@ -88,12 +84,8 @@ const recommendedLearnContentsInner = ({
           </div>
           {advancedContentUid.length>0 && (
           <div className={classes.list}>
-            {learnStore.selectedItems?.map(item =>
-              learnStore.catalog ? (
-                <MicrosoftLearnSelectedItem key={item.contentUid} itemId={item.contentUid} /> // change this to recommendedLearnCOntentSelectedItem
-              ) : (
-                <MicrosoftLearnSelectedItemShimmer />
-              )
+            {advancedContentUid.map( contentUid =>
+              <MicrosoftLearnRecommendedContentItem recommendedContentId = {contentUid} level = "advanced" />
             )}
           </div>
           )}
@@ -145,6 +137,6 @@ const recommendedLearnContentsStyles = ({ theme }: IThemeOnlyProps): Recommended
 });
 
 export const RecommendedLearnContents = styled(
-    recommendedLearnContentsInner,
+    RecommendedLearnContentsInner,
     recommendedLearnContentsStyles
 );

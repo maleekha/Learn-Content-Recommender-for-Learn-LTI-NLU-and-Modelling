@@ -62,16 +62,10 @@ const MicrosoftLearnPageInner = ({ styles }: IStylesOnly<MicrosoftLearnPageStyle
             <MicrosoftLearnSearch styles={themedClassNames(microsoftLearnSearchStyles)} />
             <MicrosoftLearnSelectedItemsList styles={themedClassNames(microsoftLearnSelectedItemsStyles)} />
             <Separator className={classes.separator} />
+            <RecommendedLearnContents/>
+            <Separator className={classes.separator} />
             <MicrosoftLearnFilterPaneSmall />
             <MicrosoftLearnFilterTags />
-
-            {/* replace with main container */}
-            <div>
-              <MicrosoftLearnRecommendedContentItem recommendedContentId={'learn.azure.move-azure-resources-to-another-resource-group'} level={'beginner'}/>
-              <MicrosoftLearnRecommendedContentItem recommendedContentId={'learn.azure.move-azure-resources-to-another-resource-group'} level={'intermediate'}/>
-              <MicrosoftLearnRecommendedContentItem recommendedContentId={'learn.azure.move-azure-resources-to-another-resource-group'} level={'advanced'}/>
-
-            </div>
             <MicrosoftLearnList />
           </div>
         </div>
