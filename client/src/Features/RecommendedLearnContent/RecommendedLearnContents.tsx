@@ -7,16 +7,12 @@ import {
   FontSizes,
   Spinner,
   SpinnerSize,
-  IButtonStyles,
-  IButtonProps
 } from '@fluentui/react';
 import { useStore } from '../../Stores/Core';
-import { MicrosoftLearnSelectedItem } from '../MicrosoftLearn/MicrosoftLearnSelectedItem';
 import { FIXED_ITEM_WIDTH } from '../MicrosoftLearn/MicrosoftLearnStyles';
 import { useObserver } from 'mobx-react-lite';
 import { themedClassNames } from '../../Core/Utils/FluentUI';
-import { MicrosoftLearnSelectedItemShimmer } from '../MicrosoftLearn/MicrosoftLearnSelectedItemShimmer';
-import { MicrosoftLearnRecommendedContentItem } from '../MicrosoftLearn/MicrosoftLearnRecommendedContentItem';
+import { MicrosoftLearnRecommendedContentItem } from './MicrosoftLearnRecommendedContentItem';
 
 export type RecommendedLearnContentsStyles = SimpleComponentStyles<
   'root' | 'header' | 'title' | 'spinner' | 'list'
@@ -27,9 +23,9 @@ const RecommendedLearnContentsInner = ({
 }: IStylesOnly<RecommendedLearnContentsStyles>): JSX.Element => {
   const recommendedLearnContentStore = useStore('recommendedLearnContentStore');
   const learnStore = useStore('microsoftLearnStore');
-  const beginnerContentUid: string[] = recommendedLearnContentStore.recommendedItems[0].recommendedContentUids.split(',');
-  const intermediateContentUid: string[] = recommendedLearnContentStore.recommendedItems[1].recommendedContentUids.split(',');
-  const advancedContentUid: string[] = recommendedLearnContentStore.recommendedItems[2].recommendedContentUids.split(',');
+  const beginnerContentUid: string[] = recommendedLearnContentStore.recommendedItems[0]?.recommendedContentUids.split(',');
+  const intermediateContentUid: string[] = recommendedLearnContentStore.recommendedItems[1]?.recommendedContentUids.split(',');
+  const advancedContentUid: string[] = recommendedLearnContentStore.recommendedItems[2]?.recommendedContentUids.split(',');
 
  // const beginnerContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
  // const intermediateContentUid : string[] = ["learn.azure.move-azure-resources-to-another-resource-group", "learn.azure.move-azure-resources-to-another-resource-group" ];
@@ -44,16 +40,22 @@ const RecommendedLearnContentsInner = ({
             <Text variant="medium" className={classes.title}>
               {`Beginner level recommended content`}
             </Text>
-            {(!recommendedLearnContentStore.recommendedItems || learnStore.isLoadingCatalog) && (
+            {( !recommendedLearnContentStore.recommendedItems || learnStore.isLoadingCatalog) && (
               <Spinner size={SpinnerSize.small} className={classes.spinner} />
             )}
           </div>
-          {beginnerContentUid.length > 0 && (
+          { beginnerContentUid && beginnerContentUid.length > 0 ? (
           <div className={classes.list}>
             {beginnerContentUid.map( contentUid =>
               <MicrosoftLearnRecommendedContentItem recommendedContentId = {contentUid} level = "beginner" />
             )}
           </div>
+          ): (
+            <div>
+            <Text variant = "small">
+              {`Sorry, No beginner level content recommendation available.`}
+            </Text>
+            </div>
           )}
         </div>
         <div>
@@ -65,12 +67,18 @@ const RecommendedLearnContentsInner = ({
               <Spinner size={SpinnerSize.small} className={classes.spinner} />
             )}
           </div>
-          {intermediateContentUid.length>0 && (
+          {intermediateContentUid && intermediateContentUid.length > 0 ? (
           <div className={classes.list}>
             {intermediateContentUid.map( contentUid =>
               <MicrosoftLearnRecommendedContentItem recommendedContentId = {contentUid} level = "intermediate" />
             )}
           </div>
+          ):(
+            <div>
+            <Text variant = "small">
+              {`Sorry, No intermediate level content recommendation available.`}
+            </Text>
+            </div>
           )}
         </div>
         <div>
@@ -82,12 +90,18 @@ const RecommendedLearnContentsInner = ({
               <Spinner size={SpinnerSize.small} className={classes.spinner} />
             )}
           </div>
-          {advancedContentUid.length>0 && (
+          {advancedContentUid && advancedContentUid.length > 0 ? (
           <div className={classes.list}>
             {advancedContentUid.map( contentUid =>
               <MicrosoftLearnRecommendedContentItem recommendedContentId = {contentUid} level = "advanced" />
             )}
           </div>
+          ) : (
+            <div>
+            <Text variant = "small">
+              {`Sorry, No advanced level content recommendation available.`}
+            </Text>
+            </div>
           )}
         </div>
       </div>

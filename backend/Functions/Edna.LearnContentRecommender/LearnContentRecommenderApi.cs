@@ -185,63 +185,6 @@ namespace Edna.LearnContentRecommender
                 assignmentRecommendedLearnContent.Add(recommendedAdvancedLearnContentEntity);
             }
             return assignmentRecommendedLearnContent;
-
-            //beginner
-            //TableQuery<RecommendedLearnContentEntity> beginnerRecommendedLearnContentQuery = new TableQuery<RecommendedLearnContentEntity>()
-            //    .Where(TableQuery.CombineFilters(
-            //        TableQuery.GenerateFilterCondition(nameof(TableEntity.PartitionKey), QueryComparisons.Equal, assignmentId),
-            //        TableOperators.And,
-            //        TableQuery.GenerateFilterCondition(nameof(TableEntity.RowKey), QueryComparisons.Equal, "beginner")
-            //    ));
-
-            //RecommendedLearnContentEntity beginnerRecommendedLearnContent = new RecommendedLearnContentEntity();
-            //TableContinuationToken beginnerContinuationToken = new TableContinuationToken();
-            //do
-            //{
-            //    TableQuerySegment<RecommendedLearnContentEntity> querySegment = await recommendedLearnContentTable.ExecuteQuerySegmentedAsync(beginnerRecommendedLearnContentQuery, beginnerContinuationToken);
-            //    beginnerContinuationToken = querySegment.ContinuationToken;
-            //    beginnerRecommendedLearnContent.AddRange(querySegment.Results);
-            //} while (beginnerContinuationToken != null);
-
-            //intermediate
-            //TableQuery<RecommendedLearnContentEntity> intermediateRecommendedLearnContentQuery = new TableQuery<RecommendedLearnContentEntity>()
-            //    .Where(TableQuery.CombineFilters(
-            //        TableQuery.GenerateFilterCondition(nameof(TableEntity.PartitionKey), QueryComparisons.Equal, assignmentId),
-            //        TableOperators.And,
-            //        TableQuery.GenerateFilterCondition(nameof(TableEntity.RowKey), QueryComparisons.Equal, "intermediate")
-            //    ));
-
-            //List<RecommendedLearnContentEntity> intermediateRecommendedLearnContent = new List<RecommendedLearnContentEntity>();
-            //TableContinuationToken intermediateContinuationToken = new TableContinuationToken();
-            //do
-            //{
-            //    TableQuerySegment<RecommendedLearnContentEntity> querySegment = await recommendedLearnContentTable.ExecuteQuerySegmentedAsync(intermediateRecommendedLearnContentQuery, intermediateContinuationToken);
-            //    intermediateContinuationToken = querySegment.ContinuationToken;
-            //    intermediateRecommendedLearnContent.AddRange(querySegment.Results);
-            //} while (intermediateContinuationToken != null);
-
-            ////advanced
-            //TableQuery<RecommendedLearnContentEntity> advancedRecommendedLearnContentQuery = new TableQuery<RecommendedLearnContentEntity>()
-            //    .Where(TableQuery.CombineFilters(
-            //        TableQuery.GenerateFilterCondition(nameof(TableEntity.PartitionKey), QueryComparisons.Equal, assignmentId),
-            //        TableOperators.And,
-            //        TableQuery.GenerateFilterCondition(nameof(TableEntity.RowKey), QueryComparisons.Equal, "advanced")
-            //    ));
-
-            //List<RecommendedLearnContentEntity> advancedRecommendedLearnContent = new List<RecommendedLearnContentEntity>();
-            //TableContinuationToken advancedContinuationToken = new TableContinuationToken();
-            //do
-            //{
-            //    TableQuerySegment<RecommendedLearnContentEntity> querySegment = await recommendedLearnContentTable.ExecuteQuerySegmentedAsync(advancedRecommendedLearnContentQuery, advancedContinuationToken);
-            //    advancedContinuationToken = querySegment.ContinuationToken;
-            //    advancedRecommendedLearnContent.AddRange(querySegment.Results);
-            //} while (advancedContinuationToken != null);
-
-            //List<RecommendedLearnContentEntity> assignmentRecommendedLearnContent = new List<RecommendedLearnContentEntity>();
-            //assignmentRecommendedLearnContent.Add(beginnerRecommendedLearnContent);
-            //assignmentRecommendedLearnContent.Add(intermediateRecommendedLearnContent);
-            //assignmentRecommendedLearnContent.Add(advancedRecommendedLearnContent);
-
         }
 
         private async Task<RecommendedLearnContentEntity> GetRecommendedLearnContentEntities(CloudTable recommendedLearnContentTable, string partitionKey, string rowKey)

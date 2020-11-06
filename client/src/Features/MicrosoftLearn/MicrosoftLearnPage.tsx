@@ -21,8 +21,7 @@ import { MicrosoftLearnFilterPaneLarge, MicrosoftLearnFilterPaneSmall } from './
 import { MicrosoftLearnFilterTags } from './MicrosoftLearnFilterTags';
 import { useLocation } from 'react-router-dom';
 import { pagesDisplayNames } from '../../Router/Consts';
-import { RecommendedLearnContents, RecommendedLearnContentsStyles } from '../RecommendedLearnContent/RecommendedLearnContents';
-import { MicrosoftLearnRecommendedContentItem } from './MicrosoftLearnRecommendedContentItem';
+import { RecommendedLearnContents } from '../RecommendedLearnContent/RecommendedLearnContents';
 
 type MicrosoftLearnPageStyles = SimpleComponentStyles<'root' | 'separator' | 'wrapper'>;
 
@@ -112,9 +111,5 @@ const microsoftLearnSelectedItemsStyles = ({
 }: IThemeOnlyProps): Partial<MicrosoftLearnSelectedItemsListStyles> => ({
   header: [getCommonSpacingStyle(theme)]
 });
-const recommendedLearnContentsStyles = ({
-  theme
-}: IThemeOnlyProps): Partial<RecommendedLearnContentsStyles> => ({
-  header: [getCommonSpacingStyle(theme)]
-});
+
 export const MicrosoftLearnPage = styled(MicrosoftLearnPageInner, microsoftLearnPageStyles);

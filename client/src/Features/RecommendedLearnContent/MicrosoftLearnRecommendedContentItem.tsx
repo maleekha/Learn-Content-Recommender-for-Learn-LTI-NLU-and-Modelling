@@ -7,8 +7,6 @@ import {
     FontSizes,
     FontWeights,
     FontIcon,
-    IconButton,
-    IButtonStyles,
     TooltipHost,
     TooltipOverflowMode,
     ITooltipHostStyles,
@@ -27,11 +25,10 @@ import { useObserver } from "mobx-react-lite";
 import React from "react";
 import { checkBoxStyle } from '../../Core/Components/Common/Inputs/EdnaInputStyles';
 import { themedClassNames } from '../../Core/Utils/FluentUI';
-import { IStylesOnly, IThemeOnlyProps, SimpleComponentStyles } from "../../Core/Utils/FluentUI/typings.fluent-ui";
-import { RecommendedLearnContent } from "../../Models/RecommendedLearnContent.model";
+import { IStylesOnly, SimpleComponentStyles } from "../../Core/Utils/FluentUI/typings.fluent-ui";
 import { useStore } from "../../Stores/Core/useStore.hook";
-import { getTypeText } from './MicrosoftLearnItemMappings';
-import { getCommonHorizontalSpacer, getCommonSpacingStyle } from './MicrosoftLearnStyles';
+import { getTypeText } from '../MicrosoftLearn/MicrosoftLearnItemMappings';
+import { getCommonHorizontalSpacer, getCommonSpacingStyle } from '../MicrosoftLearn/MicrosoftLearnStyles';
 
 export type MicrosoftLearnRecommendedContentItemStyles = SimpleComponentStyles<'root' | 'topBar'  | 'itemIcon' | 'tooltipHost' | 'details' | 'info' | 'dot' | 'content' >
 
@@ -181,7 +178,7 @@ export const microsoftLearnRecommendedItemStyles = ({ theme, level, isSelected }
     topBar: [
         {
             width: `100%`,
-            backgroundColor: level=='beginner'? 'green' : level=='intermediate'? 'gold' : 'red',
+            backgroundColor: level === 'beginner' ? 'green' : level === 'intermediate' ? 'gold' : 'red',
             height: `20px`,
             paddingLeft: theme.spacing.l1,
             borderWidth: `0px`,
@@ -189,33 +186,6 @@ export const microsoftLearnRecommendedItemStyles = ({ theme, level, isSelected }
             borderRadius: `${3}px ${3}px 0 0`,
             margin: `-10px 0px 10px 0px`
           }
-    ]
-  });
-  
-  const removeButtonStyle = ({ theme }: IThemeOnlyProps): Partial<IButtonStyles> => ({
-    root: [
-      {
-        color: theme.palette.neutralTertiaryAlt,
-        padding: theme.spacing.s1,
-        alignSelf: 'flex-start',
-        margin: theme.spacing.s2
-      }
-    ],
-    rootHovered: [
-      {
-        backgroundColor: 'none'
-      }
-    ],
-    rootPressed: [
-      {
-        backgroundColor: 'none',
-        color: theme.palette.neutralDark
-      }
-    ],
-    icon: [
-      {
-        fontSize: FontSizes.xxLargePlus
-      }
     ]
   });
   

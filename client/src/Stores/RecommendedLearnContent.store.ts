@@ -1,8 +1,7 @@
 import { ChildStore } from './Core';
-import { observable, action } from 'mobx';
+import { observable } from 'mobx';
 import { RecommendedLearnContent } from '../Models/RecommendedLearnContent.model';
 import { toObservable } from '../Core/Utils/Mobx/toObservable';
-import _ from 'lodash';
 import { switchMap, filter, map } from 'rxjs/operators';
 import { RecommendedLearnContentService } from '../Services/RecommendedLearnContent.service';
 import { RecommendedLearnContentDto } from '../Dtos/RecommendedLearnContent.dto';
