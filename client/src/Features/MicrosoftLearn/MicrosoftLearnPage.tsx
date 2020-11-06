@@ -21,6 +21,7 @@ import { MicrosoftLearnFilterPaneLarge, MicrosoftLearnFilterPaneSmall } from './
 import { MicrosoftLearnFilterTags } from './MicrosoftLearnFilterTags';
 import { useLocation } from 'react-router-dom';
 import { pagesDisplayNames } from '../../Router/Consts';
+import { MicrosoftLearnRecommendedContentItem } from './MicrosoftLearnRecommendedContentItem';
 
 type MicrosoftLearnPageStyles = SimpleComponentStyles<'root' | 'separator' | 'wrapper'>;
 
@@ -62,6 +63,14 @@ const MicrosoftLearnPageInner = ({ styles }: IStylesOnly<MicrosoftLearnPageStyle
             <Separator className={classes.separator} />
             <MicrosoftLearnFilterPaneSmall />
             <MicrosoftLearnFilterTags />
+
+            {/* replace with main container */}
+            <div>
+              <MicrosoftLearnRecommendedContentItem recommendedContentId={'learn.azure.move-azure-resources-to-another-resource-group'} level={'beginner'}/>
+              <MicrosoftLearnRecommendedContentItem recommendedContentId={'learn.azure.move-azure-resources-to-another-resource-group'} level={'intermediate'}/>
+              <MicrosoftLearnRecommendedContentItem recommendedContentId={'learn.azure.move-azure-resources-to-another-resource-group'} level={'advanced'}/>
+
+            </div>
             <MicrosoftLearnList />
           </div>
         </div>
