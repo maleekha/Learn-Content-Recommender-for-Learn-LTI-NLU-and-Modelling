@@ -1,4 +1,5 @@
 export interface RecommendedLearnContentDto {
-    RecommendedContentUids : string;
+  recommendedContentUids : string,
+  level : string
   }
   

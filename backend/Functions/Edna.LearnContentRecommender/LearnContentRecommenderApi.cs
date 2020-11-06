@@ -78,7 +78,7 @@ namespace Edna.LearnContentRecommender
             client2.Timeout = TimeSpan.FromMinutes(5);
 
             const int num = 50;
-            for(int i=0; i+num<title_desc.Count; i+=num)
+            for(int i=0; i<title_desc.Count; i+=num)
             {
                 var obj = new
                 {

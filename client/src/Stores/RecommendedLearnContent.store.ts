@@ -10,8 +10,7 @@ import { RecommendedLearnContentDto } from '../Dtos/RecommendedLearnContent.dto'
 export class RecommendedLearnContentStore extends ChildStore {
   @observable recommendedItems: RecommendedLearnContent[] = [];
 
-  initialize(): void {
-      
+  initialize(): void {      
     toObservable(() => this.root.assignmentStore.assignment)
       .pipe(
         filter(assignment => !!assignment),
@@ -22,6 +21,19 @@ export class RecommendedLearnContentStore extends ChildStore {
       )
       .subscribe(recommendedItems => {
         this.recommendedItems = recommendedItems;
+
+        // remove this later: just added for testing!
+        console.log(this.recommendedItems);
+        if(this.recommendedItems!==undefined){
+          console.log(this.recommendedItems[0].recommendedContentUids, "rec 0");
+          this.recommendedItems[0].recommendedContentUids?.split(',').forEach(uid => this.root.microsoftLearnStore.toggleItemSelection(uid));        
+        }
       });
+  }
+
+  @action
+  selectRecommendedCourses(level: string) {
+    const selectMicrosoftLearnContent = (contentUids: string[]) => contentUids.forEach(uid => this.root.microsoftLearnStore.toggleItemSelection(uid));
+    selectMicrosoftLearnContent(this.recommendedItems.filter(item => item.level===level)[0].recommendedContentUids.split(','));
   }
 }
