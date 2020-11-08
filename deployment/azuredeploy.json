@@ -310,6 +310,30 @@
                 "WEBSITE_RUN_FROM_PACKAGE": "1"
             }
         },
+                {
+            "name": "[concat('recommender', variables('ProjectNameSuffix'), '/appsettings')]",
+            "apiVersion": "2018-11-01",
+            "type": "Microsoft.Web/sites/config",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', concat('recommender' , variables('ProjectNameSuffix')))]",
+                "[resourceId('Microsoft.Resources/deploymentScripts', variables('cliResourceName'))]"
+            ],
+            "properties": {
+                "AuthUrl": "[parameters('appRegistrationApiURI')]",
+                "AssignmentsServiceUrl": "[concat('https://', 'assignments' , variables('ProjectNameSuffix'), '.azurewebsites.net/api/')]",
+                "UsersServiceUrl": "[concat('https://','users' , variables('ProjectNameSuffix'),'.azurewebsites.net/api/')]",
+                "FUNCTIONS_WORKER_RUNTIME": "[variables('runtimeStack')]",
+                "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=',concat('recommender' , variables('StorageAccountSuffix') ), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', concat('recommender' , variables('StorageAccountSuffix'))), '2019-06-01').keys[0].value)]",
+                "FUNCTIONS_EXTENSION_VERSION": "~3",
+                "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components', concat('recommender' , variables('ProjectNameSuffix'))), '2018-05-01-preview').InstrumentationKey]",
+                "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=', concat('recommender' , variables('StorageAccountSuffix')), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', concat('recommender' , variables('StorageAccountSuffix'))),'2019-06-01').keys[0].value)]",
+                "WEBSITE_CONTENTSHARE": "[toLower(concat('recommender' , variables('ProjectNameSuffix')))]",
+                "APPLICATIONINSIGHTS_CONNECTION_STRING": "[concat('InstrumentationKey=',reference(resourceId('microsoft.insights/components', concat('recommender' , variables('ProjectNameSuffix'))), '2018-05-01-preview').InstrumentationKey)]",
+                "WEBSITE_ENABLE_SYNC_UPDATE_SITE": "true",
+                "WEBSITE_RUN_FROM_PACKAGE": "1"
+            }
+        },
         {
             "type": "Microsoft.Web/serverfarms",
             "apiVersion": "2019-08-01",
@@ -460,6 +484,9 @@
             "type": "Microsoft.KeyVault/vaults/accessPolicies",
             "name": "[concat(variables('keyVaultName'), '/add')]",
             "apiVersion": "2019-09-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+            ],
             "properties": {
                 "accessPolicies": [
                     {
